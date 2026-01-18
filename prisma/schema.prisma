@@ -1,0 +1,579 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  password      String? // Para usuarios sin OAuth
+
+  // Configuración de usuario
+  language  Language   @default(ES)
+  tier      Tier       @default(FREE)
+  interests Category[] @default([])
+
+  // Seguridad y roles
+  role             Role    @default(USER)
+  isAdmin          Boolean @default(false)
+  stripeCustomerId String? @unique // ID de Stripe para pagos
+
+  // Suscripción y acceso
+  subscriptionStart    DateTime? // Fecha de inicio de la suscripción actual
+  subscriptionEnd      DateTime? // Fecha de expiración de la suscripción
+  isSubscriptionActive Boolean   @default(false) // Si la suscripción está activa
+
+  // Gamificación
+  level            Int       @default(1)
+  experiencePoints Int       @default(0)
+  totalPoints      Int       @default(0)
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  lastVisitDate    DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  accounts         Account[]
+  sessions         Session[]
+  visits           Visit[]
+  securityLogs     SecurityLog[]
+  userBadges       UserBadge[]
+  achievements     Achievement[]
+  payments         Payment[]
+  visitAuditLogs   VisitAuditLog[]
+  sessionLogs      SessionLog[]
+  refreshTokens    RefreshToken[]
+  gamificationLogs GamificationLog[]
+  notifications    Notification[]
+
+  @@index([email])
+  @@index([tier])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================
+// POIs (Points of Interest)
+// ============================================
+
+model POI {
+  id       String   @id @default(cuid())
+  nfcUid   String   @unique
+  slug     String   @unique
+  category Category
+
+  // Ubicación
+  lat     Float
+  lng     Float
+  address String
+
+  // Contenido multiidioma
+  nameEs String
+  nameEn String
+  nameFr String
+  nameDe String
+  nameIt String
+
+  descEs String @db.Text
+  descEn String @db.Text
+  descFr String @db.Text
+  descDe String @db.Text
+  descIt String @db.Text
+
+  // Multimedia (URLs Cloudinary)
+  images       String[]
+  audioGuideEs String?
+  audioGuideEn String?
+  audioGuideFr String?
+  audioGuideDe String?
+  audioGuideIt String?
+  videoUrl     String?
+  arModelUrl   String? // Para AR futuro
+  externalLink String? // Enlace externo opcional (menú, web, etc.)
+
+  // Gamificación
+  points   Int     @default(10)
+  xpReward Int     @default(50)
+  badgeId  String? // Badge especial que otorga
+
+  // Configuración
+  premiumOnly   Boolean    @default(false)
+  difficulty    Difficulty @default(EASY)
+  duration      Int        @default(15) // minutos estimados
+  accessibility Boolean    @default(true)
+  isActive      Boolean    @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  visits         Visit[]
+  visitAuditLogs VisitAuditLog[]
+  unlocks        POI[]           @relation("POIUnlocks")
+  unlockedBy     POI[]           @relation("POIUnlocks")
+
+  @@index([category])
+  @@index([premiumOnly])
+  @@index([isActive])
+  @@map("pois")
+}
+
+// ============================================
+// VISITS & USER PROGRESS
+// ============================================
+
+model Visit {
+  id     String @id @default(cuid())
+  userId String
+  poiId  String
+
+  // Detalles de la visita
+  scannedAt DateTime @default(now())
+  duration  Int? // segundos que pasó en el POI
+  rating    Int? // 1-5 estrellas
+  comment   String?  @db.Text
+
+  // Gamificación otorgada
+  pointsEarned Int @default(0)
+  xpEarned     Int @default(0)
+
+  // Tracking
+  latitude   Float? // Ubicación donde escaneó
+  longitude  Float?
+  deviceInfo String? // User agent para analytics
+
+  // Relaciones
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  poi      POI            @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  auditLog VisitAuditLog?
+
+  @@unique([userId, poiId])
+  @@index([userId])
+  @@index([poiId])
+  @@index([scannedAt])
+  @@map("visits")
+}
+
+// ============================================
+// GAMIFICATION
+// ============================================
+
+model Badge {
+  id   String @id @default(cuid())
+  slug String @unique
+
+  // Contenido multiidioma
+  nameEs String
+  nameEn String
+  nameFr String
+  nameDe String
+
+  descriptionEs String @db.Text
+  descriptionEn String @db.Text
+  descriptionFr String @db.Text
+  descriptionDe String @db.Text
+
+  // Visual
+  icon     String // URL del sprite/imagen
+  category Category?
+  rarity   BadgeRarity @default(COMMON)
+
+  // Requisitos (JSON con condiciones)
+  requirement Json // { type: "visits_count", value: 5, category: "MONUMENT" }
+
+  // Recompensas
+  pointsReward Int @default(0)
+  xpReward     Int @default(0)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  users UserBadge[]
+
+  @@index([category])
+  @@map("badges")
+}
+
+model UserBadge {
+  userId     String
+  badgeId    String
+  unlockedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String // "streak_7", "complete_tour", "night_owl", etc.
+  title       String
+  description String
+  icon        String
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@map("achievements")
+}
+
+// ============================================
+// PAYMENTS & SUBSCRIPTIONS
+// ============================================
+
+model Payment {
+  id              String @id @default(cuid())
+  userId          String
+  stripePaymentId String @unique
+
+  amount   Int // En centavos
+  currency String        @default("EUR")
+  status   PaymentStatus
+  tier     Tier
+
+  // Detalles
+  description String?
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
+}
+
+// ============================================
+// ANALYTICS & TRACKING
+// ============================================
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  eventType String // "poi_view", "map_interaction", "badge_unlock", etc.
+  eventData Json
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+// ============================================
+// SECURITY & AUDIT
+// ============================================
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String // "GPS_SPOOFING_DETECTED", "NFC_CLONING_SUSPECTED", etc.
+  severity  String // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  details   Json // Información adicional del evento
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("security_logs")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Role {
+  USER
+  BUSINESS
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum Language {
+  ES
+  EN
+  FR
+  DE
+}
+
+enum Tier {
+  FREE
+  PREMIUM
+  FAMILY
+}
+
+enum Category {
+  MONUMENT
+  MUSEUM
+  VIEWPOINT
+  RESTAURANT
+  BEACH
+  PARK
+  HISTORIC
+  CULTURE
+  NATURE
+  SHOPPING
+  BAR
+  NIGHTCLUB
+  PORT
+  ENTERTAINMENT
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum BadgeRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ============================================
+// SECURITY: ANTI-SPOOFING & AUDIT LOGS
+// ============================================
+
+model VisitChallenge {
+  id        String   @id @default(cuid())
+  userId    String
+  nonce     String
+  timestamp DateTime @default(now())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("visit_challenges")
+}
+
+model VisitAuditLog {
+  id      String  @id @default(cuid())
+  userId  String
+  poiId   String
+  nfcUid  String
+  visitId String? @unique
+
+  timestamp  DateTime @default(now())
+  success    Boolean
+  confidence Int // 0-100
+  flags      String[] // Array de flags de seguridad
+
+  // GPS Data
+  gpsSamples String @db.Text // JSON de todos los samples
+  latitude   Float?
+  longitude  Float?
+  accuracy   Float?
+
+  // Device Fingerprint
+  deviceFingerprintId String
+  deviceInfo          String @db.Text // JSON
+
+  // Challenge usado
+  challengeId String
+
+  // Relaciones
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  poi   POI    @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  visit Visit? @relation(fields: [visitId], references: [id])
+
+  @@index([userId])
+  @@index([poiId])
+  @@index([timestamp])
+  @@index([success])
+  @@index([deviceFingerprintId])
+  @@map("visit_audit_logs")
+}
+
+model SessionLog {
+  id           String @id @default(cuid())
+  userId       String
+  sessionToken String
+  action       String // 'LOGIN', 'LOGOUT', 'REFRESH', 'REVOKE'
+
+  // Device & Location
+  ip                String?
+  userAgent         String?
+  deviceFingerprint String?
+  country           String?
+  city              String?
+
+  // Flags de seguridad
+  suspicious Boolean  @default(false)
+  flags      String[] @default([])
+
+  timestamp DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([suspicious])
+  @@map("session_logs")
+}
+
+model RefreshToken {
+  id                String @id @default(cuid())
+  userId            String
+  token             String @unique
+  deviceFingerprint String
+
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model IPBlacklist {
+  id        String    @id @default(cuid())
+  ip        String    @unique
+  reason    String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  permanent Boolean   @default(false)
+
+  @@index([ip])
+  @@index([expiresAt])
+  @@map("ip_blacklist")
+}
+
+// ============================================
+// GAMIFICATION SECURITY
+// ============================================
+
+model GamificationLog {
+  id         String  @id @default(cuid())
+  userId     String
+  actionType String // VISIT_POI, RATE_POI, SHARE_CONTENT, etc
+  poiId      String?
+
+  // Idempotency
+  idempotencyKey String @unique
+
+  // Recompensas
+  xpAwarded Int @default(0)
+
+  // Seguridad
+  coordinates     Json?
+  metadata        Json?
+  suspiciousScore Int      @default(0)
+  flags           String[] @default([])
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([actionType])
+  @@index([poiId])
+  @@index([createdAt])
+  @@index([suspiciousScore])
+  @@map("gamification_logs")
+}
+
+model Notification {
+  id       String @id @default(cuid())
+  userId   String
+  type     String // LEVEL_UP, BADGE_EARNED, etc
+  title    String
+  message  String
+  metadata Json?
+
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([read])
+  @@map("notifications")
+}

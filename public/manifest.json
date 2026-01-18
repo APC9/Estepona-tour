@@ -1,0 +1,19 @@
+{
+  "name": "Estepona Tours - Experiencia Gamificada",
+  "short_name": "Estepona Tours",
+  "description": "Descubre Estepona de una forma única con tours interactivos gamificados",
+  "start_url": "/map",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "lifestyle", "navigation"]
+}
