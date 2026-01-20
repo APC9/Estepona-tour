@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider, useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { usePOIStore } from '@/lib/stores/poiStore';
 import { useGamificationStore } from '@/lib/stores/gamificationStore';
 import SubscriptionCheck from './auth/SubscriptionCheck';
@@ -57,6 +58,30 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <SessionWatcher>
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#4ade80',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
           <SubscriptionCheck />
           {children}
         </SessionWatcher>

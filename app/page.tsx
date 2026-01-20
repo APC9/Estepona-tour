@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { EmailAuthForm } from '@/components/auth/EmailAuthForm';
 import { useLanguageStore } from '@/lib/stores/languageStore';
 import { translate } from '@/lib/translations';
+import RewardsShowcase from '@/components/rewards/RewardsShowcase';
 
 export default function HomePage() {
   const { status } = useSession();
@@ -542,6 +543,9 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Rewards Showcase Section */}
+      <RewardsShowcase language={language} />
     </div>
   );
 }

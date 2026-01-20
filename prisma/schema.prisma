@@ -62,6 +62,7 @@ model User {
   refreshTokens    RefreshToken[]
   gamificationLogs GamificationLog[]
   notifications    Notification[]
+  userRewards      UserReward[]
 
   @@index([email])
   @@index([tier])
@@ -576,4 +577,72 @@ model Notification {
   @@index([createdAt])
   @@index([read])
   @@map("notifications")
+}
+
+// ============================================
+// REWARDS SYSTEM
+// ============================================
+
+model RewardConfig {
+  id              String     @id @default(cuid())
+  tier            RewardTier @unique
+  pointsRequired  Int
+  name            String
+  size            String
+  description     String     @db.Text
+  emoji           String     @default("🏆")
+  isActive        Boolean    @default(true)
+  
+  // Timestamps
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  @@map("reward_configs")
+}
+
+model UserReward {
+  id          String      @id @default(cuid())
+  userId      String
+  rewardTier  RewardTier // BRONZE, SILVER, GOLD
+  
+  // Información de la postal personalizada
+  photoUrl    String? // URL de la foto del usuario en Cloudinary
+  userMessage String? @db.Text // Mensaje personalizado opcional
+  
+  // Estado del premio
+  status      RewardStatus @default(PENDING) // PENDING, APPROVED, IN_PRODUCTION, SHIPPED, DELIVERED
+  
+  // Tracking de envío
+  trackingNumber String?
+  shippingAddress String? @db.Text
+  
+  // Timestamps
+  claimedAt   DateTime @default(now())
+  approvedAt  DateTime?
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+  
+  // Relaciones
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([rewardTier])
+  @@index([status])
+  @@index([claimedAt])
+  @@map("user_rewards")
+}
+
+enum RewardTier {
+  BRONZE
+  SILVER
+  GOLD
+}
+
+enum RewardStatus {
+  PENDING
+  APPROVED
+  IN_PRODUCTION
+  SHIPPED
+  DELIVERED
+  CANCELED
 }

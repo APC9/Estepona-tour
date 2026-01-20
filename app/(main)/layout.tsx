@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { TierApplier } from '@/components/auth/TierApplier';
+import RewardNotification from '@/components/rewards/RewardNotification';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
@@ -69,6 +70,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-screen bg-gray-50">
       <TierApplier />
+      <RewardNotification />
       {children}
     </main>
   );

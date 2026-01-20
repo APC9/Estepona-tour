@@ -31,6 +31,31 @@ export const GAMIFICATION_CONFIG = {
   MAX_XP_PER_POI: 200,
 } as const;
 
+// Configuración de premios (postales sublimadas en aluminio)
+export const REWARDS_CONFIG = {
+  BRONZE: {
+    name: 'Bronce',
+    emoji: '🥉',
+    pointsRequired: 500,
+    size: '10x15 cm',
+    description: 'Postal sublimada en aluminio acabado mate',
+  },
+  SILVER: {
+    name: 'Plata',
+    emoji: '🥈',
+    pointsRequired: 1500,
+    size: '15x20 cm',
+    description: 'Postal sublimada en aluminio premium acabado brillante con marco',
+  },
+  GOLD: {
+    name: 'Oro',
+    emoji: '🥇',
+    pointsRequired: 3000,
+    size: '20x30 cm',
+    description: 'Postal sublimada en aluminio de lujo acabado espejo con marco premium y certificado',
+  },
+} as const;
+
 // Configuración de tiers
 export const TIER_CONFIG = {
   FREE: {

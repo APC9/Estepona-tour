@@ -72,10 +72,14 @@ export default function AdminLayout({
   const menuItems = [
     { icon: '📊', label: 'Dashboard', href: '/admin' },
     { icon: '📍', label: 'POIs/Comercios', href: '/admin/pois' },
-    { icon: '�', label: 'Etiquetas NFC', href: '/admin/nfc' },
-    { icon: '�📈', label: 'Analytics', href: '/admin/analytics' },
+    { icon: '🏷️', label: 'Etiquetas NFC', href: '/admin/nfc' },
+    { icon: '📈', label: 'Analytics', href: '/admin/analytics' },
     { icon: '🏅', label: 'Badges', href: '/admin/badges' },
-    { icon: '👥', label: 'Usuarios', href: '/admin/users' },    { icon: '💳', label: 'Suscripciones', href: '/admin/subscriptions' },    { icon: '📖', label: 'Guía Admin', href: '/admin/guide' },
+    { icon: '🏆', label: 'Premios', href: '/admin/rewards' },
+    { icon: '🎁', label: 'Premios Usuarios', href: '/admin/user-rewards' },
+    { icon: '👥', label: 'Usuarios', href: '/admin/users' },
+    { icon: '💳', label: 'Suscripciones', href: '/admin/subscriptions' },
+    { icon: '📖', label: 'Guía Admin', href: '/admin/guide' },
     { icon: '📱', label: 'Guía Usuario', href: '/admin/user-guide' },
   ];
 

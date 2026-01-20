@@ -8,6 +8,7 @@ import { useGamificationStore } from '@/lib/stores/gamificationStore';
 import { usePOIStore } from '@/lib/stores/poiStore';
 import { useLanguageStore, Language } from '@/lib/stores/languageStore';
 import { translate } from '@/lib/translations';
+import RewardsProgress from '@/components/rewards/RewardsProgress';
 
 export default function UserProgress() {
   const router = useRouter();
@@ -80,6 +81,9 @@ export default function UserProgress() {
 
             {/* Botones (idioma + upgrade) en móvil */}
             <div className="flex items-center gap-2 lg:hidden">
+              {/* Indicador de premios compacto */}
+              <RewardsProgress compact />
+
               {/* Botón de upgrade - solo visible para usuarios FREE */}
               {userTier === 'FREE' && (
                 <button
@@ -172,6 +176,9 @@ export default function UserProgress() {
 
           {/* Botones desktop */}
           <div className="hidden lg:flex items-center gap-4">
+            {/* Indicador de premios desktop */}
+            <RewardsProgress compact />
+
             {/* Botón de upgrade - solo visible para usuarios FREE */}
             {userTier === 'FREE' && (
               <button
